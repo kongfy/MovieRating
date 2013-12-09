@@ -1,0 +1,4 @@
+*.txt
+*.rate
+.project
+.pydevproject
