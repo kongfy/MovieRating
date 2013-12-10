@@ -13,6 +13,12 @@ def load_train_data():
         user_set.add(user)
         movie_set.add(movie)
         
+        total, count = movie_rate.get(movie, (0, 0))
+        movie_rate[movie] = (total + rate, count + 1)
+        
+        total, count = user_rate.get(user, (0, 0))
+        user_rate[user] = (total + rate, count + 1)
+        
         user_list = movie_userlist.get(movie, [])
         user_list.append(user)
         movie_userlist[movie] = user_list
@@ -51,15 +57,35 @@ def slope_one():
             temp = slope_one_info.get(movie_i, {})
             temp[movie_j] = (float(total) / count, count)
             slope_one_info[movie_i] = temp
+            
+def average_rate_on_movie(movie):
+    total, count = movie_rate.get(movie, (0, 0))
+    if (count == 0):
+        return 3.0
+    return float(total) / count
+
+def average_rate_by_user(user):
+    total, count = movie_rate.get(user, (0, 0))
+    if count == 0:
+        return 3.0
+    return float(total) / count
 
 def predict(user, movie):
     if not rating_data.get(user):
-        print 'lazy user...'
-        return 3
+        rate = average_rate_on_movie(movie)
+        print 'lazy user %d, rate for movie %d: %f' % (user, movie, rate)
+        return rate
     
     if rating_data[user].get(movie):
-        print 'already rated...'
-        return rating_data[user][movie]
+        rate = rating_data[user][movie]
+        print 'already rated, user %d, movie %d, rate: %f' % (user, movie, rate)
+        return rate
+    
+    if not movie_userlist.get(movie):
+        rate = average_rate_by_user(user)
+        print 'cold movie %d, rate for user %d: %f' % (movie, user, rate)
+        return rate
+                
     
     movie_list = user_movielist[user]
     a = 0
@@ -82,7 +108,6 @@ def predict(user, movie):
         b += count
         a += count * (basic_rate + fix * t)
     
-    print 'slope one...'
     return min(float(a) / b, 5.0)
     
 
@@ -93,12 +118,16 @@ if __name__ == '__main__':
     global movie_userlist
     global user_movielist
     global rating_data
+    global movie_rate
+    global user_rate
     
     user_set = set()
     movie_set = set()
     movie_userlist = {}
     user_movielist = {}
     rating_data = {}
+    movie_rate = {}
+    user_rate = {}
     
     print 'laoding train.txt...'
     load_train_data()
@@ -119,6 +148,8 @@ if __name__ == '__main__':
         [user, movie] = line.split()
         user = int(user); movie = int(movie)
         rate = int(round(predict(user, movie)))
+        if rate == 0:
+            rate = 3
         f_output.write((str(rate)) + '\n')
     
     f_test.close()
