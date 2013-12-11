@@ -87,7 +87,7 @@ def item_based_CF():
     n = len(movie_list)
     
     for i in xrange(n):
-        sys.stdout.write("\rcalulating relations %s / %s" % (i, n))
+        sys.stdout.write("\rcalulating relations %s / %s" % (i + 1, n))
         sys.stdout.flush()
         movie_i = movie_list[i]
         relations = {}
@@ -144,6 +144,7 @@ if __name__ == '__main__':
         datFile = open('train.dat', 'r')
         movie_rate = cPickle.load(datFile)
         user_rate = cPickle.load(datFile)
+        movie_userlist = cPickle.load(datFile)
         rating_data = cPickle.load(datFile)
         item_relations = cPickle.load(datFile)
         datFile.close()
@@ -168,6 +169,7 @@ if __name__ == '__main__':
         datFile = open('train.dat', 'w')
         cPickle.dump(movie_rate, datFile)
         cPickle.dump(user_rate, datFile)
+        cPickle.dump(movie_userlist, datFile)
         cPickle.dump(rating_data, datFile)
         cPickle.dump(item_relations, datFile)
         datFile.close()
@@ -185,6 +187,8 @@ if __name__ == '__main__':
         rate = int(round(predict(user, movie)))
         if rate == 0:
             rate = 3
+        if rate > 5:
+            rate = 5
         f_output.write((str(rate)) + '\n')
     sys.stdout.write('\n')
     
