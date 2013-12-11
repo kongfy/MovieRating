@@ -130,8 +130,10 @@ def predict(user, movie):
     a = 0.0
     b = 0.0
     for ref_movie, w in ref_movies:
-        a += w * (rating_data[user][ref_movie] - basic_rate)
-        b += abs(w)
+        ref_rate = rating_data[user].get(ref_movie)
+        if ref_rate:
+            a += w * (ref_rate - basic_rate)
+            b += abs(w)
     return basic_rate + a / b;
 
 if __name__ == '__main__':
