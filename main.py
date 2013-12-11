@@ -53,7 +53,7 @@ def average_rate_by_user(user):
         return 3.0
     return float(total) / count
 
-def siliarity_between_movies(movie_i, movie_j):
+def similarity_between_movies(movie_i, movie_j):
     user_i = movie_userlist[movie_i]
     user_j = movie_userlist[movie_j]
     users = set(user_i) & set(user_j)
@@ -72,7 +72,10 @@ def siliarity_between_movies(movie_i, movie_j):
         c += (rating_data[user][movie_j] - average_rate_j) ** 2
     if b * c == 0:
         return 0.0
-    return a / math.sqrt(b * c)
+    similarity = a / math.sqrt(b * c)
+    if similarity < 0:
+        return 0.0
+    return similarity
 
 def k_similar_movie(movie, k):
     def get_w(t):
@@ -93,10 +96,14 @@ def item_based_CF():
         relations = {}
         for j in xrange(0, i):
             movie_j = movie_list[j]
-            relations[movie_j] = item_relations[movie_j][movie_i]
+            similarty = item_relations[movie_j].get(movie_i, 0)
+            if similarty != 0:
+                relations[movie_j] = similarty
         for j in xrange(i + 1, n):
             movie_j = movie_list[j]
-            relations[movie_j] = siliarity_between_movies(movie_i, movie_j)
+            similarty = similarity_between_movies(movie_i, movie_j)
+            if similarty != 0:
+                relations[movie_j] = similarty 
         item_relations[movie_i] = relations
     sys.stdout.write('\n')
 
