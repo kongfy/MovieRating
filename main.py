@@ -65,7 +65,7 @@ def average_rate_on_movie(movie):
     return float(total) / count
 
 def average_rate_by_user(user):
-    total, count = movie_rate.get(user, (0, 0))
+    total, count = user_rate.get(user, (0, 0))
     if count == 0:
         return 3.0
     return float(total) / count
