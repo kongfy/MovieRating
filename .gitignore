@@ -2,3 +2,4 @@
 *.rate
 .project
 .pydevproject
+*.dat

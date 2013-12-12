@@ -8,8 +8,9 @@ import math
 import sys
 import os
 import cPickle
+import gc
 
-config = {'K' : 10,
+config = {'K' : 10000,
           }
 
 def load_train_data():
@@ -77,14 +78,32 @@ def similarity_between_movies(movie_i, movie_j):
         return 0.0
     return similarity
 
+def get_w(t):
+    movie, w = t
+    return w
+
 def k_similar_movie(movie, k):
-    def get_w(t):
-        movie, w = t
-        return w
+    return item_relations[movie]
     
-    temp = item_relations[movie].items()
-    temp = sorted(temp, key = get_w, reverse = True)
-    return temp[:k]
+    #temp = item_relations[movie].items()
+    #temp = sorted(temp, key = get_w, reverse = True)
+    #return temp[:k]
+
+def sort_relations():
+    n = len(movie_list)
+    
+    for i in xrange(n):
+        sys.stdout.write("\rsorting relations %s / %s" % (i + 1, n))
+        sys.stdout.flush()
+        movie = movie_list[i]
+        temp = item_relations[movie].items()
+        temp = sorted(temp, key = get_w, reverse = True)
+        item_relations[movie] = temp
+
+        if i % 100 == 0:
+            gc.collect()
+    sys.stdout.write('\n')
+    gc.collect()
     
 def item_based_CF():
     n = len(movie_list)
@@ -110,17 +129,17 @@ def item_based_CF():
 def predict(user, movie):
     if not rating_data.get(user):
         rate = average_rate_on_movie(movie)
-        print 'lazy user %d, rate for movie %d: %f' % (user, movie, rate)
+        #print 'lazy user %d, rate for movie %d: %f' % (user, movie, rate)
         return rate
     
     if rating_data[user].get(movie):
         rate = rating_data[user][movie]
-        print 'already rated, user %d, movie %d, rate: %f' % (user, movie, rate)
+        #print 'already rated, user %d, movie %d, rate: %f' % (user, movie, rate)
         return rate
     
     if not movie_userlist.get(movie):
         rate = average_rate_by_user(user)
-        print 'cold movie %d, rate for user %d: %f' % (movie, user, rate)
+        #print 'cold movie %d, rate for user %d: %f' % (movie, user, rate)
         return rate
                 
     
@@ -134,6 +153,8 @@ def predict(user, movie):
         if ref_rate:
             a += w * (ref_rate - basic_rate)
             b += abs(w)
+    if b == 0:
+        return basic_rate
     return basic_rate + a / b;
 
 if __name__ == '__main__':
@@ -174,6 +195,7 @@ if __name__ == '__main__':
         
         print 'CF...'
         item_based_CF()
+        sort_relations()
         
         datFile = open('train.dat', 'w')
         cPickle.dump(movie_rate, datFile)
@@ -182,11 +204,14 @@ if __name__ == '__main__':
         cPickle.dump(rating_data, datFile)
         cPickle.dump(item_relations, datFile)
         datFile.close()
+
+    
     
     print 'testing...'
     f_test = open('test.txt', 'r')
     f_output = open('test.rate', 'w')
     i = 0
+    
     for line in f_test:
         i += 1
         sys.stdout.write("\rpredicting : %s / 250000" % (i))
