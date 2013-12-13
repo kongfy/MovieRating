@@ -6,8 +6,6 @@ Created on 2013-12-9
 
 import math
 import sys
-import os
-import cPickle
 import gc
 
 config = {'K' : 10000,
@@ -45,14 +43,14 @@ def load_train_data():
 def average_rate_on_movie(movie):
     total, count = movie_rate.get(movie, (0, 0))
     if (count == 0):
-        return 0.0
+        return 1.0
     return float(total) / count
 
 
 def average_rate_by_user(user):
     total, count = user_rate.get(user, (0, 0))
     if count == 0:
-        return 0.0
+        return 1.0
     return float(total) / count
 
 def similarity_between_movies(movie_i, movie_j):
@@ -69,10 +67,10 @@ def similarity_between_movies(movie_i, movie_j):
     b = 0.0
     c = 0.0
     for user in users:
-        average_rate_u = average_rate_by_user(user)
-        a += (rating_data[user][movie_i] - average_rate_u) * (rating_data[user][movie_j] - average_rate_u)
-        b += (rating_data[user][movie_i] - average_rate_u) ** 2
-        c += (rating_data[user][movie_j] - average_rate_u) ** 2
+        #average_rate_u = average_rate_by_user(user)
+        a += (rating_data[user][movie_i] - average_rate_i) * (rating_data[user][movie_j] - average_rate_j)
+        b += (rating_data[user][movie_i] - average_rate_i) ** 2
+        c += (rating_data[user][movie_j] - average_rate_i) ** 2
     if a == 0:
         return 0.0
     if b * c == 0:
@@ -130,7 +128,10 @@ def item_based_CF():
 
 def predict(user, movie):
     if not rating_data.get(user):
-        rate = average_rate_on_movie(movie)
+        if not movie_userlist.get(movie):
+            rate = 3.0
+        else:
+            rate = average_rate_on_movie(movie)
         #print 'lazy user %d, rate for movie %d: %f' % (user, movie, rate)
         return rate
     
@@ -172,23 +173,23 @@ if __name__ == '__main__':
     global movie_list
     global item_relations
     
-	user_set = set()
-	movie_set = set()
-	movie_userlist = {}
-	user_movielist = {}
-	rating_data = {}
-	movie_rate = {}
-	user_rate = {}
-	
-	print 'laoding train.txt...'
-	load_train_data()
-	
-	movie_list = list(movie_set)
-	item_relations = {}
-	
-	print 'CF...'
-	item_based_CF()
-	sort_relations()
+    user_set = set()
+    movie_set = set()
+    movie_userlist = {}
+    user_movielist = {}
+    rating_data = {}
+    movie_rate = {}
+    user_rate = {}
+    
+    print 'laoding train.txt...'
+    load_train_data()
+    
+    movie_list = list(movie_set)
+    item_relations = {}
+    
+    print 'CF...'
+    item_based_CF()
+    sort_relations()
     
     print 'testing...'
     f_test = open('test.txt', 'r')
@@ -202,8 +203,8 @@ if __name__ == '__main__':
         [user, movie] = line.split()
         user = int(user); movie = int(movie)
         rate = int(round(predict(user, movie)))
-        if rate == 0:
-            rate = 3
+        if rate < 1:
+            rate = 1
         if rate > 5:
             rate = 5
         f_output.write((str(rate)) + '\n')
