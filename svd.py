@@ -67,33 +67,30 @@ def predict_svd(user, movie):
 def svd():
     global bi, bu, qi, pu
     
-    factor = 2
+    factor = 30
     learn_rate = 0.01
     regularization = 0.05
     
     temp = math.sqrt(factor)
-    bi = [0.0 for i in xrange(movie_count)]
-    bu = [0.0 for i in xrange(user_count)]
+    bi = [0.0] * movie_count
+    bu = [0.0] * user_count
     qi = [[(0.1 * random.random() / temp) for j in xrange(factor)] for i in xrange(movie_count)]
     pu = [[(0.1 * random.random() / temp) for j in xrange(factor)] for i in xrange(user_count)]
     
     preRmse = 10.0
-    for r in xrange(1000):
+    for r in xrange(300):
         for user, user_rates in rating_data.iteritems():
             for movie, rate in user_rates.iteritems():
                 prediction = predict_svd(user, movie)
                 
-            eui = rate - prediction
+                eui = rate - prediction
+                bu[user] += learn_rate * (eui - regularization * bu[user])
+                bi[movie] += learn_rate * (eui - regularization * bi[movie])
+                for k in xrange(factor):
+                    temp = pu[user][k]
+                    pu[user][k] += learn_rate * (eui * qi[movie][k] - regularization * pu[user][k])
+                    qi[movie][k] += learn_rate * (eui * temp - regularization * qi[movie][k])
         
-            bu[user] += learn_rate * (eui - regularization * bu[user])
-            bi[movie] += learn_rate * (eui - regularization * bi[movie])
-                
-            for k in xrange(factor):
-                temp = pu[user][k]
-                pu[user][k] += learn_rate * (eui * qi[movie][k] - regularization * pu[user][k])
-                qi[movie][k] += learn_rate * (eui * temp - regularization * qi[movie][k])
-        
-        #learn_rate *= 0.9
         curRmse = validate(bu, bi, pu, qi)
         print("round %d: %f" %(r, curRmse))
         if curRmse >= preRmse:
@@ -105,6 +102,8 @@ def validate(bu, bi, pu, qi):
     rmse = 0
     count = 0
     for user, user_rates in rating_data.iteritems():
+        if user % 10 != 0:
+            continue
         for movie, rate in user_rates.iteritems():
             count += 1            
             prediction = predict_svd(user, movie)
@@ -161,7 +160,7 @@ if __name__ == '__main__':
         print 'loading train.txt...'
         load_train_data()
     
-        print 'training SVD model...'
+        print 'training...'
         svd()
     
     print 'testing...'
