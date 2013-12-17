@@ -6,7 +6,6 @@ Created on 2013-12-13
 
 import math
 import random
-import os
 import sys
 
 def load_train_data():
@@ -46,8 +45,8 @@ def load_train_data():
         user_rating[movie] = rate
         rating_data[user] = user_rating
         
-        average_rate = float(total_rate) / total_count
-        
+    average_rate = float(total_rate) / total_count
+    
     f_train.close()
     
 def iner_product(v1, v2):
@@ -67,7 +66,7 @@ def predict_svd(user, movie):
 def svd():
     global bi, bu, qi, pu
     
-    factor = 30
+    factor = 100
     learn_rate = 0.01
     regularization = 0.05
     
@@ -78,7 +77,7 @@ def svd():
     pu = [[(0.1 * random.random() / temp) for j in xrange(factor)] for i in xrange(user_count)]
     
     preRmse = 10.0
-    for r in xrange(300):
+    for r in xrange(200):
         for user, user_rates in rating_data.iteritems():
             for movie, rate in user_rates.iteritems():
                 prediction = predict_svd(user, movie)
@@ -91,6 +90,7 @@ def svd():
                     pu[user][k] += learn_rate * (eui * qi[movie][k] - regularization * pu[user][k])
                     qi[movie][k] += learn_rate * (eui * temp - regularization * qi[movie][k])
         
+        learn_rate *= 0.9
         curRmse = validate(bu, bi, pu, qi)
         print("round %d: %f" %(r, curRmse))
         if curRmse >= preRmse:
@@ -102,8 +102,6 @@ def validate(bu, bi, pu, qi):
     rmse = 0
     count = 0
     for user, user_rates in rating_data.iteritems():
-        if user % 10 != 0:
-            continue
         for movie, rate in user_rates.iteritems():
             count += 1            
             prediction = predict_svd(user, movie)
@@ -156,12 +154,11 @@ if __name__ == '__main__':
     movie_rate = {}
     user_rate = {}
     
-    if not os.path.exists('model.dat'):
-        print 'loading train.txt...'
-        load_train_data()
+    print 'loading train.txt...'
+    load_train_data()
     
-        print 'training...'
-        svd()
+    print 'training...'
+    svd()
     
     print 'testing...'
     f_test = open('test.txt', 'r')
